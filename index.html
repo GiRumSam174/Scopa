@@ -163,6 +163,24 @@
         .hand-locked { opacity: 0.5; pointer-events: none; }
         .hand-locked .card { filter: grayscale(1); }
     </style>
+
+<style>
+/* PWA MENU STYLES */
+#info-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: none; justify-content: center; align-items: center; flex-direction: column; }
+.info-box { background: #333; padding: 25px; border-radius: 12px; text-align: center; border: 2px solid #ffca28; width: 85%; max-width: 320px; color: white; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+.info-btn { border: none; padding: 12px 20px; display: block; width: 100%; margin: 8px 0; font-weight: bold; cursor: pointer; border-radius: 25px; font-size: 0.95rem; }
+.btn-coffee { background: #FFDD00; color: #000; text-decoration: none; display: inline-block; box-sizing: border-box; }
+.btn-close { background: #555; color: white; }
+.btn-new { background: #ffca28; color: #333; }
+.stats-container { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-size: 0.9rem; line-height: 1.6; }
+.stat-highlight { color: #ffca28; font-weight: bold; font-size: 1.1rem; }
+</style>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1b5e20">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
     
@@ -173,7 +191,7 @@
 
     <div id="header">
         <span>CPU: <span id="s-cpu">0</span></span>
-        <span id="header-title" onclick="showVersion()">SCOPA</span>
+        <span id="header-title" onclick="openEasterEgg()" style="cursor:pointer" >SCOPA</span>
         <span>YOU: <span id="s-player">0</span></span>
     </div>
 
@@ -809,7 +827,13 @@
         }
 
         mContent.innerHTML = html;
-        document.getElementById('modal').style.display = 'flex';
+        
+                 if(typeof winner !== 'undefined') { 
+                    if(winner === 'player') recordGameEnd(true);
+                    else if(winner === 'cpu') recordGameEnd(false);
+                 }
+                 document.getElementById('modal').style.display = 'flex'
+                 ;
     }
 
     function calcPrimiera(pile) {
@@ -828,5 +852,51 @@
     function nextRound() { startRound(); }
     window.onload = initGame;
 </script>
+
+<div id="info-overlay">
+    <div class="info-box">
+        <h2 style="color:#ffca28; margin-top:0;">SCOPA</h2>
+        <div style="font-size:0.8rem; margin-bottom:15px; opacity:0.7;">Version 2.5 PWA</div>
+        
+        <div class="stats-container" id="stats-content">
+            Loading...
+        </div>
+
+        <button class="info-btn btn-new" onclick="location.reload()">NEW GAME</button>
+        <a href="https://www.buymeacoffee.com/classmarks" target="_blank" style="text-decoration:none;">
+            <button class="info-btn btn-coffee"> Buy Me A Coffee</button>
+        </a>
+        <button class="info-btn btn-close" onclick="document.getElementById('info-overlay').style.display='none'">CLOSE</button>
+    </div>
+</div>
 </body>
 </html>
+<script>
+// --- INJECTED PWA LOGIC ---
+let appStats = JSON.parse(localStorage.getItem('scopa_stats_v1')) || { played: 0, won: 0 };
+
+function saveStats() { localStorage.setItem('scopa_stats_v1', JSON.stringify(appStats)); }
+
+function openEasterEgg() {
+    let p = appStats.played;
+    let w = appStats.won;
+    let pct = p > 0 ? Math.round((w/p)*100) : 0;
+    
+    document.getElementById('stats-content').innerHTML = 
+        'Games won/played<br>' +
+        '<span class="stat-highlight">' + w + ' / ' + p + ' = ' + pct + '%</span>';
+        
+    document.getElementById('info-overlay').style.display = 'flex';
+}
+
+function recordGameEnd(isWin) {
+    appStats.played++;
+    if(isWin) appStats.won++;
+    saveStats();
+}
+
+// Service Worker Registration
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js'); });
+}
+</script>
